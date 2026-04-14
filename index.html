@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <meta name="theme-color" content="#0f172a">
+    <title>Med Basha Pro Elite</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet" />
+
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif; height: 100vh; overflow: hidden; transition: font-size 0.2s; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1.5rem; }
+        .input-field { border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1rem; text-align: center; transition: all 0.3s ease; }
+        input[type="time"] { color-scheme: dark; }
+        .btn-press:active { transform: scale(0.96); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        input[type="range"] { -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 8px; border-radius: 5px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: white; cursor: pointer; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body x-data="medBashaApp()" x-init="initApp()" x-cloak :style="`font-size: ${config.fontSize}px`">
+
+    <template x-if="screen === 1">
+        <div class="flex flex-col h-full p-4 space-y-4">
+            <header class="flex justify-between items-end pb-2">
+                <div>
+                    <h1 class="text-2xl font-extrabold italic" :style="`color: ${config.colorAccent}`">MED BASHA <span class="text-white text-sm not-italic">PRO</span></h1>
+                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Nómina 16-15</p>
+                </div>
+                <button @click="screen = 4" class="p-2 glass-card btn-press"><span class="material-symbols-rounded text-slate-400">palette</span></button>
+            </header>
+
+            <div class="glass-card p-4 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-extrabold uppercase text-xs" :style="`color: ${config.colorAccent}`" x-text="mesNombre + ' ' + año"></span>
+                    <div class="flex gap-4">
+                        <button @click="cambiarMes(-1)" class="p-1"><span class="material-symbols-rounded">chevron_left</span></button>
+                        <button @click="cambiarMes(1)" class="p-1"><span class="material-symbols-rounded">chevron_right</span></button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold">
+                    <template x-for="dia in diasCalendario" :key="dia.fecha">
+                        <div @click="seleccionarDia(dia.fecha)" class="py-2 flex flex-col items-center cursor-pointer rounded-xl" :style="dia.fecha === fechaSeleccionada ? `background: ${config.colorAccent}22` : ''">
+                            <span :class="dia.isHoy ? 'text-white rounded-full w-7 h-7 flex items-center justify-center' : 'text-slate-400'" 
+                                  :style="dia.isHoy ? `background: ${config.colorAccent}` : ''"
+                                  x-text="dia.num"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button @click="abrirRegistro(false)" class="glass-card p-5 btn-press" :style="`border-bottom: 4px solid ${config.colorAccent}`">
+                    <span class="material-symbols-rounded text-3xl" :style="`color: ${config.colorAccent}`">timer</span>
+                    <p class="text-[10px] font-black uppercase mt-2">Continua</p>
+                </button>
+                <button @click="abrirRegistro(true)" class="glass-card p-5 btn-press" style="border-bottom: 4px solid #f97316">
+                    <span class="material-symbols-rounded text-3xl text-orange-500">wb_twilight</span>
+                    <p class="text-[10px] font-black uppercase mt-2">Partida</p>
+                </button>
+            </div>
+
+            <div class="flex-grow flex flex-col items-center justify-center" @click="screen = 3">
+                <h2 class="text-7xl font-black" x-text="currentTime"></h2>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-[0.7em] mt-2">Toca para ver resumen</p>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="screen === 2">
+        <div class="flex flex-col h-full p-4 space-y-4 overflow-hidden">
+            <header class="flex items-center justify-between">
+                <button @click="screen = 1" class="p-2 btn-press"><span class="material-symbols-rounded">arrow_back</span></button>
+                <span class="text-[10px] font-black uppercase text-slate-500" x-text="formatearFechaLarga(fechaSeleccionada)"></span>
+                <div class="w-10"></div>
+            </header>
+
+            <div class="flex-grow space-y-4 overflow-y-auto no-scrollbar pb-40">
+                <div class="glass-card p-4 space-y-4" :style="`border-left: 4px solid ${config.colorAccent}`">
+                    <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                        <span class="text-[11px] font-black uppercase" :style="`color: ${config.colorAccent}`">Bloque 1</span>
+                        <input type="text" x-model="form.bus1" placeholder="BUS" class="w-20 py-1 font-black text-sm uppercase rounded-lg bg-slate-900/50 text-yellow-500 border border-white/10 text-center outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-field p-3" :style="`background: ${config.colorAccent}15`"><label class="text-[8px] font-bold text-slate-500 uppercase block mb-1">Entrada</label><input type="time" x-model="form.horaE1" @input="calcularTodo()" class="w-full text-2xl font-black bg-transparent outline-none" :style="`color: ${config.colorAccent}`"></div>
+                        <div class="input-field p-3" :style="`background: ${config.colorAccent}15`"><label class="text-[8px] font-bold text-slate-500 uppercase block mb-1">Salida</label><input type="time" x-model="form.horaS1" @input="calcularTodo()" class="w-full text-2xl font-black bg-transparent outline-none" :style="`color: ${config.colorAccent}`"></div>
+                    </div>
+                </div>
+
+                <template x-if="form.esPartida">
+                    <div class="glass-card p-4 space-y-4 border-l-4 border-l-orange-500">
+                        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                            <span class="text-[11px] font-black uppercase text-orange-500">Bloque 2</span>
+                            <input type="text" x-model="form.bus2" placeholder="BUS 2" class="w-20 py-1 font-black text-sm uppercase rounded-lg bg-slate-900/50 text-yellow-500 border border-white/10 text-center outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="input-field p-3 bg-orange-500/10"><label class="text-[8px] font-bold text-slate-500 uppercase block mb-1">Entrada</label><input type="time" x-model="form.horaE2" @input="calcularTodo()" class="w-full text-2xl font-black bg-transparent outline-none text-orange-500"></div>
+                            <div class="input-field p-3 bg-orange-500/10"><label class="text-[8px] font-bold text-slate-500 uppercase block mb-1">Salida</label><input type="time" x-model="form.horaS2" @input="calcularTodo()" class="w-full text-2xl font-black bg-transparent outline-none text-orange-500"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="glass-card p-4 grid grid-cols-2 gap-3 bg-white/5">
+                    <div class="input-field p-2 bg-slate-900/40"><label class="text-[8px] font-bold text-slate-500 block">KM INICIO</label><input type="number" x-model="form.kmI1" @input="calcularTodo()" class="w-full text-xl font-bold bg-transparent outline-none text-white"></div>
+                    <div class="input-field p-2 bg-slate-900/40"><label class="text-[8px] font-bold text-slate-500 block">KM FINAL</label><input type="number" x-model="form.kmF1" @input="calcularTodo()" class="w-full text-xl font-bold bg-transparent outline-none text-white"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div :class="form.comida === 'SI' ? 'bg-green-500/20 border-green-500' : 'bg-slate-800/40 border-slate-700'" class="p-5 rounded-3xl border flex flex-col items-center">
+                        <span class="material-symbols-rounded text-3xl mb-1 text-green-500">restaurant</span>
+                        <p class="text-[10px] font-black uppercase">Comida</p>
+                    </div>
+                    <div :class="form.cena === 'SI' ? 'bg-yellow-500/20 border-yellow-500' : 'bg-slate-800/40 border-slate-700'" class="p-5 rounded-3xl border flex flex-col items-center">
+                        <span class="material-symbols-rounded text-3xl mb-1 text-yellow-500">dinner_dining</span>
+                        <p class="text-[10px] font-black uppercase">Cena</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fixed bottom-0 left-0 w-full p-4 safe-bottom bg-slate-900/90 backdrop-blur-xl border-t border-white/5">
+                <div class="flex justify-between items-center">
+                    <div class="text-center"><p class="text-[8px] font-bold text-slate-500 uppercase">Horas Hoy</p><p class="text-2xl font-black" x-text="res.total"></p></div>
+                    <button @click="guardarJornada()" class="h-14 px-8 rounded-2xl flex items-center justify-center btn-press shadow-lg font-black text-white uppercase text-xs" :style="`background: ${config.colorAccent}`">Archivar Turno</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="screen === 3">
+        <div class="flex flex-col h-full p-4 space-y-4 overflow-hidden">
+            <header class="flex items-center justify-between">
+                <button @click="screen = 1" class="p-2 btn-press"><span class="material-symbols-rounded">arrow_back</span></button>
+                <h2 class="font-black uppercase text-xs tracking-widest" :style="`color: ${config.colorAccent}`">Resumen Nómina</h2>
+                <div class="w-10"></div>
+            </header>
+
+            <div class="grid grid-cols-3 gap-2">
+                <div class="glass-card p-3 text-center border-b-2" :style="`border-color: ${config.colorAccent}`"><p class="text-[7px] font-bold text-slate-500">HORAS</p><p class="text-sm font-black" x-text="totalMesH"></p></div>
+                <div class="glass-card p-3 text-center border-b-2 border-green-500"><p class="text-[7px] font-bold text-slate-500">COMIDAS</p><p class="text-sm font-black text-green-500" x-text="totalMesComida"></p></div>
+                <div class="glass-card p-3 text-center border-b-2 border-yellow-500"><p class="text-[7px] font-bold text-slate-500">CENAS</p><p class="text-sm font-black text-yellow-500" x-text="totalMesCena"></p></div>
+            </div>
+
+            <div id="capture-area" class="flex-grow overflow-y-auto space-y-4 pb-20 no-scrollbar">
+                <template x-for="semana in historyByWeeks" :key="semana.num">
+                    <div class="glass-card overflow-hidden">
+                        <div class="bg-white/5 px-4 py-2 flex justify-between items-center border-b border-white/5">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest" x-text="'Semana ' + semana.num"></span>
+                            <div class="flex gap-4 text-[9px] font-bold">
+                                <span class="text-green-500" x-text="'C: ' + semana.comidas"></span>
+                                <span class="text-yellow-500" x-text="'D: ' + semana.cenas"></span>
+                                <span :style="`color: ${config.colorAccent}`" x-text="semana.totalH.toFixed(2) + 'h'"></span>
+                            </div>
+                        </div>
+                        <table class="w-full text-[10px]">
+                            <tbody class="font-bold">
+                                <template x-for="item in semana.dias" :key="item.fecha">
+                                    <tr class="border-t border-white/5">
+                                        <td class="p-2"><span x-text="formatearFechaCorta(item.fecha)"></span> <span class="text-slate-500 text-[8px]" x-text="getDName(item.fecha)"></span></td>
+                                        <td class="text-center" x-text="item.hStr"></td>
+                                        <td class="text-center">
+                                            <div class="flex justify-center gap-1">
+                                                <template x-if="item.comida === 'SI'"><div class="w-1.5 h-1.5 rounded-full bg-green-500"></div></template>
+                                                <template x-if="item.cena === 'SI'"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div></template>
+                                            </div>
+                                        </td>
+                                        <td class="text-right p-2 text-yellow-500" x-text="item.km"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </div>
+            <button @click="generarPDF()" class="fixed bottom-4 left-4 right-4 py-4 glass-card font-black text-[10px] uppercase text-white shadow-2xl bg-white/5">Exportar PDF</button>
+        </div>
+    </template>
+
+    <template x-if="screen === 4">
+        <div class="flex flex-col h-full p-4 space-y-6">
+            <header class="flex items-center gap-4">
+                <button @click="screen = 1" class="p-2 btn-press"><span class="material-symbols-rounded">arrow_back</span></button>
+                <h2 class="font-black uppercase text-xs tracking-widest">Configuración</h2>
+            </header>
+            
+            <div class="glass-card p-6 space-y-8">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Color de Acento</p>
+                    <div class="grid grid-cols-5 gap-4">
+                        <template x-for="col in availableColors">
+                            <button @click="config.colorAccent = col.hex; saveConfig()" 
+                                    :style="`background: ${col.hex}`" 
+                                    class="w-10 h-10 rounded-full border-2 btn-press"
+                                    :class="config.colorAccent === col.hex ? 'border-white scale-125 shadow-lg' : 'border-transparent'">
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="border-t border-white/10 pt-6">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Tamaño de Texto</p>
+                    <input type="range" min="12" max="22" x-model="config.fontSize" @input="saveConfig()" class="w-full">
+                    <div class="flex justify-between text-[10px] font-bold mt-2 text-slate-500">
+                        <span>A-</span>
+                        <span x-text="config.fontSize + 'px'" :style="`color: ${config.colorAccent}`"></span>
+                        <span>A+</span>
+                    </div>
+                </div>
+            </div>
+            <button @click="borrarTodo()" class="w-full py-4 rounded-2xl bg-red-950/30 border border-red-900 text-red-500 text-[10px] font-black uppercase">Borrar Historial Completo</button>
+        </div>
+    </template>
+
+    <script>
+        function medBashaApp() {
+            return {
+                screen: 1, fechaSeleccionada: new Date().toISOString().split('T')[0], currentTime: '',
+                mes: new Date().getMonth(), año: new Date().getFullYear(), mesNombre: '',
+                diasCalendario: [], history: [], totalMesH: 0, totalMesComida: 0, totalMesCena: 0,
+                config: { colorAccent: '#3b82f6', fontSize: 14 },
+                availableColors: [{hex:'#3b82f6'}, {hex:'#f97316'}, {hex:'#10b981'}, {hex:'#8b5cf6'}, {hex:'#78350f'}],
+                form: { esPartida: false, bus1: '', bus2: '', horaE1: '', horaS1: '', kmI1: '', kmF1: '', horaE2: '', horaS2: '', kmI2: '', kmF2: '', comida: 'NO', cena: 'NO' },
+                res: { total: '00:00', totalMin: 0, kmTotales: 0 },
+
+                initApp() {
+                    this.history = JSON.parse(localStorage.getItem('med_basha_v12') || '[]');
+                    const cfg = localStorage.getItem('med_cfg_v12');
+                    if(cfg) this.config = JSON.parse(cfg);
+                    this.renderCalendario();
+                    this.updateClock();
+                    setInterval(() => this.updateClock(), 1000);
+                },
+
+                saveConfig() { localStorage.setItem('med_cfg_v12', JSON.stringify(this.config)); },
+                updateClock() {
+                    const now = new Date();
+                    this.currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                },
+
+                renderCalendario() {
+                    const days = new Date(this.año, this.mes + 1, 0).getDate();
+                    this.mesNombre = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(new Date(this.año, this.mes));
+                    this.diasCalendario = [];
+                    for(let i=1; i<=days; i++) {
+                        let f = `${this.año}-${String(this.mes+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                        this.diasCalendario.push({ num: i, fecha: f, isHoy: f === new Date().toISOString().split('T')[0] });
+                    }
+                },
+
+                seleccionarDia(f) {
+                    this.fechaSeleccionada = f;
+                    const ex = this.history.find(i => i.fecha === f);
+                    if(ex) { this.form = {...this.form, ...ex, esPartida: ex.tipo === 'partida'}; }
+                    else { this.form = {esPartida:false, bus1:'', bus2:'', horaE1:'', horaS1:'', kmI1:'', kmF1:'', horaE2:'', horaS2:'', kmI2:'', kmF2:'', comida:'NO', cena:'NO'}; }
+                    this.calcularTodo();
+                    this.screen = 2;
+                },
+
+                abrirRegistro(p) { 
+                    const f = new Date().toISOString().split('T')[0];
+                    this.fechaSeleccionada = f;
+                    this.form = {esPartida:p, bus1:'', bus2:'', horaE1:'', horaS1:'', kmI1:'', kmF1:'', horaE2:'', horaS2:'', kmI2:'', kmF2:'', comida:'NO', cena:'NO'}; 
+                    this.screen = 2; 
+                },
+
+                calcularTodo() {
+                    const pM = (t) => { if(!t) return null; let [h,m]=t.split(':').map(Number); return h*60+m; };
+                    let tE1 = pM(this.form.horaE1), tS1 = pM(this.form.horaS1);
+                    let tE2 = pM(this.form.horaE2), tS2 = pM(this.form.horaS2);
+                    
+                    let m1 = (tS1!==null && tE1!==null) ? (tS1<=tE1 ? (tS1+1440)-tE1 : tS1-tE1) : 0;
+                    let m2 = (this.form.esPartida && tS2!==null && tE2!==null) ? (tS2<=tE2 ? (tS2+1440)-tE2 : tS2-tE2) : 0;
+                    let total = m1 + m2;
+                    if(total > 0 && total < 360) total = 360; 
+                    
+                    this.res.totalMin = total;
+                    this.res.total = Math.floor(total/60).toString().padStart(2,'0') + ":" + Math.round(total%60).toString().padStart(2,'0');
+                    this.res.kmTotales = (parseInt(this.form.kmF1)-parseInt(this.form.kmI1) || 0);
+
+                    // REGLAS DE DIETAS
+                    let hT = total / 60;
+                    let hF = this.form.esPartida ? this.form.horaS2 : this.form.horaS1;
+                    this.form.comida = 'NO'; this.form.cena = 'NO';
+                    if(hF) {
+                        if((hT >= 9 && hF >= "15:00") || (hT >= 6 && hF >= "15:30")) this.form.comida = 'SI';
+                        if(hT >= 6 && hF >= "23:00") this.form.cena = 'SI';
+                    }
+                },
+
+                guardarJornada() {
+                    if(!this.form.bus1) { alert("⚠️ Falta Nº BUS."); return; }
+                    this.history = this.history.filter(i => i.fecha !== this.fechaSeleccionada);
+                    this.history.push({...this.form, fecha: this.fechaSeleccionada, hStr: this.res.total, km: this.res.kmTotales, tipo: this.form.esPartida ? 'partida' : 'continua'});
+                    localStorage.setItem('med_basha_v12', JSON.stringify(this.history));
+                    this.screen = 3;
+                },
+
+                get historyByWeeks() {
+                    let fil = this.history.filter(i => {
+                        let d = new Date(i.fecha);
+                        let mN = (d.getDate() >= 16) ? (d.getMonth()+1)%12 : d.getMonth();
+                        return mN === this.mes;
+                    }).sort((a,b) => a.fecha.localeCompare(b.fecha));
+
+                    this.totalMesH = 0; this.totalMesComida = 0; this.totalMesCena = 0;
+                    let w = {};
+                    fil.forEach(i => {
+                        let d = new Date(i.fecha);
+                        let wN = Math.ceil((((d-new Date(d.getFullYear(),0,1))/86400000)+new Date(d.getFullYear(),0,1).getDay()+1)/7);
+                        if(!w[wN]) w[wN] = {num:wN, dias:[], totalH:0, comidas:0, cenas:0};
+                        w[wN].dias.push(i);
+                        let [h,m] = i.hStr.split(':').map(Number);
+                        let dec = h + m/60; w[wN].totalH += dec; this.totalMesH += dec;
+                        if(i.comida === 'SI') { w[wN].comidas++; this.totalMesComida++; }
+                        if(i.cena === 'SI') { w[wN].cenas++; this.totalMesCena++; }
+                    });
+                    this.totalMesH = this.totalMesH.toFixed(2);
+                    return Object.values(w).sort((a,b) => b.num - a.num);
+                },
+
+                cambiarMes(v) { this.mes += v; if(this.mes<0){this.mes=11;this.año--} if(this.mes>11){this.mes=0;this.año++} this.renderCalendario(); },
+                formatearFechaLarga(f) { return new Intl.DateTimeFormat('es-ES', {weekday:'long', day:'numeric', month:'long'}).format(new Date(f)); },
+                formatearFechaCorta(f) { return f.split('-')[2]+'/'+f.split('-')[1]; },
+                getDName(f) { return new Intl.DateTimeFormat('es-ES',{weekday:'short'}).format(new Date(f)); },
+                generarPDF() { html2pdf().from(document.getElementById('capture-area')).save(`Nomina_${this.mesNombre}.pdf`); },
+                borrarTodo() { if(confirm("¿Borrar todo el historial?")) { localStorage.clear(); location.reload(); } }
+            }
+        }
+    </script>
+</body>
+</html>
